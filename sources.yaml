@@ -1,0 +1,36 @@
+# Источники новостей. Правится через git, перезапуск бота подхватывает изменения.
+# topic — рубрика в дайджесте; weight — приоритет источника (1.0 = обычный).
+# Иностранные материалы переводятся на русский автоматически (core/translate.py).
+
+# Несекретные настройки бота: работают, если панель хостинга не даёт задать env-переменные.
+# Переменные окружения (если заданы) имеют приоритет. Токен и ключ NewsAPI сюда НЕ писать.
+bot:
+  owner_id: 0            # числовой Telegram ID владельца (узнать: @userinfobot)
+  allowed_user_ids: []
+  digest_time: "08:00"
+  tz: Europe/Moscow
+
+digest:
+  per_topic: 5        # пунктов на рубрику в дайджесте
+  max_age_hours: 24   # окно свежести
+  max_articles: 2000  # лимит хранения в памяти (256 МБ на Starter)
+
+rss:
+  - {name: TechCrunch,   url: "https://techcrunch.com/feed/",                    topic: Технологии, weight: 1.2}
+  - {name: РИА Новости,  url: "https://ria.ru/export/rss2/archive/index.xml",    topic: Главное,    weight: 1.0}
+  - {name: Lenta.ru,     url: "https://lenta.ru/rss/news",                       topic: Главное,    weight: 1.0}
+  - {name: Коммерсантъ,  url: "https://www.kommersant.ru/RSS/news.xml",          topic: Экономика,  weight: 1.1}
+  - {name: Habr,         url: "https://habr.com/ru/rss/articles/",               topic: Технологии, weight: 0.9}
+
+# Публичные Telegram-каналы (парсинг https://t.me/s/<channel>)
+telegram: []
+  # - {channel: rian_ru, topic: Главное, weight: 0.8}
+
+# NewsAPI (нужен NEWSAPI_KEY; free-план: 100 запросов/сутки, задержка 24 ч)
+newsapi:
+  max_requests_per_day: 20
+  queries: []
+    # - {query: "искусственный интеллект", topic: Технологии, weight: 0.8, language: ru}
+
+keywords: []   # совпадения повышают рейтинг, например: [ИИ, OpenAI]
+stopwords: []  # новости с этими словами отбрасываются
