@@ -7,6 +7,7 @@ import httpx
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram.types import BotCommand
 
 from bot.handlers import build_router
 from bot.scheduler import NewsScheduler
@@ -16,6 +17,11 @@ from core.service import NewsService
 from core.translate import Translator
 
 UA = "Mozilla/5.0 (compatible; NewsBot/1.0)"
+COMMANDS = {
+    "start": "Справка и кнопки", "weather": "Погода на завтра", "btc": "Курс BTC/USDT",
+    "usd": "Курс доллара", "news": "Свежие новости", "digest": "Дайджест сейчас",
+    "topics": "Рубрики и источники", "sources": "Состояние источников",
+}
 log = logging.getLogger("startup")
 
 PROBES = {
@@ -57,6 +63,7 @@ async def main() -> None:
     dp = Dispatcher()
     dp.include_router(build_router(service, info, settings, sched))
 
+    await bot.set_my_commands([BotCommand(command=c, description=d) for c, d in COMMANDS.items()])
     asyncio.create_task(probe_network(client))
     sched.start()
     first_refresh = asyncio.create_task(sched.refresh())  # не блокируем старт polling

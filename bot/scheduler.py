@@ -13,6 +13,8 @@ from config import Settings
 from core.info import InfoService
 from core.service import NewsService, RefreshReport
 
+from .keyboard import KEYBOARD
+
 log = logging.getLogger(__name__)
 ALERT_INTERVAL = 3600  # предупреждения владельцу — не чаще 1/час
 
@@ -61,10 +63,11 @@ class NewsScheduler:
         texts += self.service.news_messages(local)
         texts += self.service.digest_messages(now, exclude=local)
         for text in texts:
-            await self.bot.send_message(self.settings.owner_id, text)
+            await self.bot.send_message(self.settings.owner_id, text, reply_markup=KEYBOARD)
 
     async def send_weather(self) -> None:
-        await self.bot.send_message(self.settings.owner_id, await self.info.weather())
+        await self.bot.send_message(self.settings.owner_id, await self.info.weather(),
+                                    reply_markup=KEYBOARD)
 
     async def _alert(self, report: RefreshReport) -> None:
         problems = []

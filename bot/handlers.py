@@ -7,12 +7,14 @@ from zoneinfo import ZoneInfo
 
 from aiogram import BaseMiddleware, F, Router
 from aiogram.filters import Command, CommandObject
-from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup, TelegramObject
+from aiogram.types import Message, TelegramObject
 
 from config import Settings
 from core.info import InfoService
 from core.service import NewsService
 
+from .keyboard import (BTN_BTC, BTN_LOCAL, BTN_RUSSIA, BTN_USD, BTN_WEATHER, BTN_WORLD,  # noqa: F401
+                       KEYBOARD, NEWS_BUTTONS)
 from .scheduler import NewsScheduler, parse_hhmm
 
 HELP = (
@@ -26,14 +28,6 @@ HELP = (
     "Утром приходят курсы, новости города и дайджест, вечером — погода на завтра.\n"
     "Новости на иностранных языках автоматически переводятся на русский."
 )
-
-BTN_WEATHER, BTN_BTC, BTN_USD = "🌤 Погода", "₿ BTC", "💵 Доллар"
-BTN_WORLD, BTN_RUSSIA, BTN_LOCAL = "🌍 Мир", "🇷🇺 Россия", "🏙 Нижний Новгород"
-NEWS_BUTTONS = {BTN_WORLD: "Мир", BTN_RUSSIA: "Россия"}
-KEYBOARD = ReplyKeyboardMarkup(resize_keyboard=True, keyboard=[
-    [KeyboardButton(text=BTN_WEATHER), KeyboardButton(text=BTN_BTC), KeyboardButton(text=BTN_USD)],
-    [KeyboardButton(text=BTN_WORLD), KeyboardButton(text=BTN_RUSSIA), KeyboardButton(text=BTN_LOCAL)],
-])
 
 
 class AllowlistMiddleware(BaseMiddleware):
@@ -60,28 +54,31 @@ def build_router(service: NewsService, info: InfoService, settings: Settings,
     router.message.outer_middleware(AllowlistMiddleware(settings.allowed_ids))
     tz = ZoneInfo(settings.tz)
 
+    async def answer(message: Message, text: str) -> None:
+        await message.answer(text, reply_markup=KEYBOARD)
+
     async def reply_all(message: Message, texts: list[str]) -> None:
         for t in texts:
-            await message.answer(t)
+            await answer(message, t)
 
     @router.message(Command("start", "help"))
     async def start(message: Message) -> None:
-        await message.answer(HELP, reply_markup=KEYBOARD)
+        await answer(message, HELP)
 
     @router.message(Command("weather"))
     @router.message(F.text == BTN_WEATHER)
     async def weather(message: Message) -> None:
-        await message.answer(await info.weather())
+        await answer(message, await info.weather())
 
     @router.message(Command("btc"))
     @router.message(F.text == BTN_BTC)
     async def btc(message: Message) -> None:
-        await message.answer(await info.btc())
+        await answer(message, await info.btc())
 
     @router.message(Command("usd"))
     @router.message(F.text == BTN_USD)
     async def usd(message: Message) -> None:
-        await message.answer(await info.usd())
+        await answer(message, await info.usd())
 
     @router.message(F.text.in_({BTN_WORLD, BTN_RUSSIA, BTN_LOCAL}))
     async def news_button(message: Message) -> None:
@@ -97,7 +94,7 @@ def build_router(service: NewsService, info: InfoService, settings: Settings,
     async def topics(message: Message) -> None:
         lines = [f"<b>{html.escape(t)}</b>: {html.escape(', '.join(src))}"
                  for t, src in service.topics().items()]
-        await message.answer("\n".join(lines) or "Источники не настроены.")
+        await answer(message, "\n".join(lines) or "Источники не настроены.")
 
     @router.message(Command("digest"))
     async def digest(message: Message) -> None:
@@ -107,7 +104,7 @@ def build_router(service: NewsService, info: InfoService, settings: Settings,
     @router.message(Command("sources"))
     async def sources(message: Message) -> None:
         if not service.status:
-            await message.answer("Сбор ещё не выполнялся.")
+            await answer(message, "Сбор ещё не выполнялся.")
             return
         lines = []
         for st in service.status.values():
@@ -116,19 +113,19 @@ def build_router(service: NewsService, info: InfoService, settings: Settings,
             else:
                 ts = st.last_ok.astimezone(tz).strftime("%H:%M") if st.last_ok else "—"
                 lines.append(f"✅ {html.escape(st.name)} — {st.count} шт., {ts}")
-        await message.answer("\n".join(lines))
+        await answer(message, "\n".join(lines))
 
     @router.message(Command("time"))
     async def set_time(message: Message, command: CommandObject) -> None:
         if message.from_user.id != settings.owner_id:
-            await message.answer("Менять время может только владелец.")
+            await answer(message, "Менять время может только владелец.")
             return
         try:
             h, m = parse_hhmm(command.args or "")
         except ValueError:
-            await message.answer(f"Формат: /time ЧЧ:ММ. Сейчас дайджест в {sched.digest_time} ({settings.tz}).")
+            await answer(message, f"Формат: /time ЧЧ:ММ. Сейчас дайджест в {sched.digest_time} ({settings.tz}).")
             return
         sched.set_digest_time(f"{h}:{m}")
-        await message.answer(f"Дайджест теперь в {sched.digest_time} ({settings.tz}).")
+        await answer(message, f"Дайджест теперь в {sched.digest_time} ({settings.tz}).")
 
     return router
