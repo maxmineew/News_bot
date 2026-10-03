@@ -2,8 +2,10 @@
 
 Telegram-бот: собирает новости из RSS / NewsAPI / публичных Telegram-каналов, **автоматически переводит иностранные на русский** (бесплатный Google, без ключа), убирает дубли и присылает утренний дайджест. Без LLM.
 
+По расписанию владельцу: в **08:00** — курс BTC/USDT (OKX) и доллара (ЦБ РФ) с изменением за сутки, новости Нижнего Новгорода и дайджест; в **20:00** — погода на завтра с Gismeteo (если он недоступен — Open-Meteo, с пометкой). Время и город — в `sources.yaml` (`bot:`, `weather:`).
+
 ## Команды
-`/news [тема]` · `/topics` · `/digest` · `/sources` · `/time ЧЧ:ММ` (только владелец). Чужим пользователям бот не отвечает.
+`/news [тема]` · `/topics` · `/digest` · `/weather` · `/btc` · `/usd` · `/sources` · `/time ЧЧ:ММ` (только владелец). После `/start` появляются кнопки: Погода, BTC, Доллар, Мир, Россия, Нижний Новгород. Чужим пользователям бот не отвечает.
 
 ## Запуск локально
 ```bash
@@ -32,8 +34,8 @@ python -m pytest          # тесты
 ```
 main.py  config.py  sources.yaml
 bot/      handlers.py (команды, allowlist), scheduler.py (сбор + дайджест)
-core/     service.py, translate.py, normalize.py, dedupe.py, rank.py, digest.py
-sources/  rss.py, tgchannel.py, newsapi.py
+core/     service.py, info.py (погода и курсы), translate.py, normalize.py, dedupe.py, rank.py, digest.py
+sources/  rss.py, tgchannel.py, newsapi.py, weather.py, rates.py
 tests/
 ```
 Состояние хранится только в памяти (на Starter диск стирается при рестарте): после перезапуска бот заново собирает ленты за последние часы.

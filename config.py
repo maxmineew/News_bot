@@ -9,6 +9,11 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent
+DEFAULT_WEATHER = {
+    "city": "Нижний Новгород",
+    "gismeteo_url": "https://www.gismeteo.ru/weather-nizhny-novgorod-4355/tomorrow/",
+    "lat": 56.33, "lon": 44.0,
+}
 
 
 def _clean_value(raw: str) -> str:
@@ -44,6 +49,7 @@ class Settings:
     allowed_ids: set[int] = field(default_factory=set)
     newsapi_key: str = ""
     digest_time: str = "08:00"
+    weather_time: str = "20:00"
     tz: str = "Europe/Moscow"
     log_level: str = "INFO"
     translate_daily_chars: int = 200_000
@@ -74,6 +80,7 @@ class Settings:
             allowed_ids=_ids(extra) | {owner_id},
             newsapi_key=os.environ.get("NEWSAPI_KEY", "").strip(),
             digest_time=os.environ.get("DIGEST_TIME", "").strip() or str(bot.get("digest_time") or "08:00"),
+            weather_time=os.environ.get("WEATHER_TIME", "").strip() or str(bot.get("weather_time") or "20:00"),
             tz=os.environ.get("TZ", "").strip() or str(bot.get("tz") or "Europe/Moscow"),
             log_level=os.environ.get("LOG_LEVEL", "INFO").upper(),
             translate_daily_chars=int(os.environ.get("TRANSLATE_DAILY_CHARS", "200000")),
@@ -88,6 +95,8 @@ class SourcesConfig:
     newsapi: dict = field(default_factory=dict)
     keywords: list[str] = field(default_factory=list)
     stopwords: list[str] = field(default_factory=list)
+    weather: dict = field(default_factory=lambda: dict(DEFAULT_WEATHER))
+    local_topic: str = "Нижний Новгород"
     per_topic: int = 5
     max_age_hours: int = 24
     max_articles: int = 2000
@@ -102,6 +111,8 @@ class SourcesConfig:
             newsapi=data.get("newsapi", {}),
             keywords=data.get("keywords", []),
             stopwords=data.get("stopwords", []),
+            weather={**DEFAULT_WEATHER, **(data.get("weather") or {})},
+            local_topic=digest.get("local_topic", "Нижний Новгород"),
             per_topic=digest.get("per_topic", 5),
             max_age_hours=digest.get("max_age_hours", 24),
             max_articles=digest.get("max_articles", 2000),

@@ -7,19 +7,35 @@
 bot:
   owner_id: 0            # числовой Telegram ID владельца (узнать: @userinfobot)
   allowed_user_ids: []
-  digest_time: "08:00"
+  digest_time: "08:00"     # утро: курсы BTC и доллара, новости города, дайджест
+  weather_time: "20:00"    # вечер: погода на завтра
   tz: Europe/Moscow
 
 digest:
   per_topic: 5        # пунктов на рубрику в дайджесте
   max_age_hours: 24   # окно свежести
   max_articles: 2000  # лимит хранения в памяти (256 МБ на Starter)
+  local_topic: Нижний Новгород  # рубрика «новости города» (утренняя сводка и кнопка)
+
+# Погода на завтра: страница Gismeteo; lat/lon — для запасного источника Open-Meteo
+weather:
+  city: Нижний Новгород
+  gismeteo_url: "https://www.gismeteo.ru/weather-nizhny-novgorod-4355/tomorrow/"
+  lat: 56.33
+  lon: 44.0
 
 rss:
   - {name: TechCrunch,   url: "https://techcrunch.com/feed/",                    topic: Технологии, weight: 1.2}
   - {name: РИА Новости,  url: "https://ria.ru/export/rss2/archive/index.xml",    topic: Главное,    weight: 1.0}
   - {name: Lenta.ru,     url: "https://lenta.ru/rss/news",                       topic: Главное,    weight: 1.0}
   - {name: Коммерсантъ,  url: "https://www.kommersant.ru/RSS/news.xml",          topic: Экономика,  weight: 1.1}
+  # Рубрики кнопок «Мир», «Россия», «Нижний Новгород». Вес выше общих лент: дубли уходят в рубрику.
+  - {name: Lenta.ru Мир,        url: "https://lenta.ru/rss/news/world",                topic: Мир,             weight: 1.05}
+  - {name: Коммерсантъ Мир,     url: "https://www.kommersant.ru/RSS/section-world.xml", topic: Мир,             weight: 1.05}
+  - {name: Lenta.ru Россия,     url: "https://lenta.ru/rss/news/russia",               topic: Россия,          weight: 1.05}
+  - {name: НИА Нижний Новгород, url: "https://www.niann.ru/rss",                       topic: Нижний Новгород, weight: 1.1}
+  - {name: Время Н,             url: "https://www.vremyan.ru/rss/news.rss",            topic: Нижний Новгород, weight: 1.1}
+  - {name: Коммерсантъ НН,      url: "https://www.kommersant.ru/rss/regions/nnov.xml", topic: Нижний Новгород, weight: 1.1}
   - {name: Habr,         url: "https://habr.com/ru/rss/articles/",               topic: Технологии, weight: 0.9}
 
 # Публичные Telegram-каналы (парсинг https://t.me/s/<channel>)

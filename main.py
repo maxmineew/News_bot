@@ -11,6 +11,7 @@ from aiogram.enums import ParseMode
 from bot.handlers import build_router
 from bot.scheduler import NewsScheduler
 from config import Settings, SourcesConfig
+from core.info import InfoService
 from core.service import NewsService
 from core.translate import Translator
 
@@ -22,6 +23,9 @@ PROBES = {
     "google-translate": "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q=hello",
     "techcrunch-rss": "https://techcrunch.com/feed/",
     "t.me": "https://t.me/s/telegram",
+    "gismeteo": "https://www.gismeteo.ru/",
+    "okx": "https://www.okx.com/api/v5/public/time",
+    "cbr": "https://www.cbr.ru/scripts/XML_daily.asp",
 }
 
 
@@ -45,12 +49,13 @@ async def main() -> None:
     client = httpx.AsyncClient(timeout=10, follow_redirects=True, headers={"User-Agent": UA})
     translator = Translator(daily_chars=settings.translate_daily_chars)
     service = NewsService(cfg, translator, client, settings.newsapi_key)
+    info = InfoService(client, cfg.weather, settings.tz)
 
     bot = Bot(settings.token, default=DefaultBotProperties(
         parse_mode=ParseMode.HTML, link_preview_is_disabled=True))
-    sched = NewsScheduler(bot, service, settings)
+    sched = NewsScheduler(bot, service, info, settings)
     dp = Dispatcher()
-    dp.include_router(build_router(service, settings, sched))
+    dp.include_router(build_router(service, info, settings, sched))
 
     asyncio.create_task(probe_network(client))
     sched.start()

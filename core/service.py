@@ -144,9 +144,10 @@ class NewsService:
             items = [a for a in items if a.topic.lower() == topic.lower()]
         return items
 
-    def digest_messages(self, now: datetime | None = None) -> list[str]:
+    def digest_messages(self, now: datetime | None = None, exclude: str | None = None) -> list[str]:
         now = now or datetime.now(timezone.utc)
-        return build_digest(self.ranked(), now, self.cfg.per_topic)
+        ranked = [a for a in self.ranked() if a.topic != exclude]
+        return build_digest(ranked, now, self.cfg.per_topic)
 
     def news_messages(self, topic: str | None = None, limit: int = 10) -> list[str]:
         header = f"Новости: {topic}" if topic else "Свежие новости"

@@ -1,4 +1,4 @@
-"""Встроенный планировщик: периодический сбор + утренний дайджест владельцу."""
+"""Встроенный планировщик: периодический сбор, утренняя сводка и вечерняя погода владельцу."""
 from __future__ import annotations
 
 import logging
@@ -10,6 +10,7 @@ from aiogram import Bot
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from config import Settings
+from core.info import InfoService
 from core.service import NewsService, RefreshReport
 
 log = logging.getLogger(__name__)
@@ -25,8 +26,8 @@ def parse_hhmm(value: str) -> tuple[int, int]:
 
 
 class NewsScheduler:
-    def __init__(self, bot: Bot, service: NewsService, settings: Settings) -> None:
-        self.bot, self.service, self.settings = bot, service, settings
+    def __init__(self, bot: Bot, service: NewsService, info: InfoService, settings: Settings) -> None:
+        self.bot, self.service, self.info, self.settings = bot, service, info, settings
         self.tz = ZoneInfo(settings.tz)
         self.scheduler = AsyncIOScheduler(timezone=self.tz)
         self.digest_time = settings.digest_time
@@ -36,6 +37,9 @@ class NewsScheduler:
         self.scheduler.add_job(self.refresh, "interval", minutes=self.settings.refresh_minutes,
                                id="refresh", max_instances=1, coalesce=True)
         self.set_digest_time(self.digest_time)
+        h, m = parse_hhmm(self.settings.weather_time)
+        self.scheduler.add_job(self.send_weather, "cron", hour=h, minute=m, id="weather",
+                               misfire_grace_time=3600, coalesce=True)
         self.scheduler.start()
 
     def set_digest_time(self, value: str) -> None:
@@ -52,8 +56,15 @@ class NewsScheduler:
     async def send_digest(self) -> None:
         await self.refresh()
         now = datetime.now(self.tz)
-        for text in self.service.digest_messages(now):
+        local = self.service.cfg.local_topic
+        texts = [await self.info.rates()]
+        texts += self.service.news_messages(local)
+        texts += self.service.digest_messages(now, exclude=local)
+        for text in texts:
             await self.bot.send_message(self.settings.owner_id, text)
+
+    async def send_weather(self) -> None:
+        await self.bot.send_message(self.settings.owner_id, await self.info.weather())
 
     async def _alert(self, report: RefreshReport) -> None:
         problems = []
